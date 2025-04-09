@@ -8,7 +8,7 @@ import TweetPreview from "@/components/tweet-preview"
 
 export default function DirectPostPanel() {
   const [tweets, setTweets] = useState<string[]>([""])
-  const [media, setMedia] = useState<{ tweetIndex: number; url: string; type: "image" | "video" | "gif"; file?: File }[]>([])
+  const [media, setMedia] = useState<{ tweetIndex: number; url: string; type: string; file?: File }[]>([])
   const [isPosting, setIsPosting] = useState(false)
   const [view, setView] = useState<"edit" | "preview">("edit")
 
@@ -32,7 +32,7 @@ export default function DirectPostPanel() {
   const handleMediaUpload = (tweetIndex: number, newMedia: Array<{
     tweetIndex: number;
     url: string;
-    type: "image" | "video" | "gif";
+    type: string;
     file?: File;
   }>) => {
     setMedia(prevMedia => {

@@ -10,7 +10,7 @@ interface TweetEditorProps {
   media: {
     tweetIndex: number
     url: string
-    type: "image" | "video" | "gif"
+    type: string
     file?: File
   }[]
   onTweetChange: (index: number, text: string) => void

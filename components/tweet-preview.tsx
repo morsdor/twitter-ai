@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card"
 
 interface TweetPreviewProps {
   tweets: string[]
-  media: { url: string; type: "image" | "video" | "gif" }[]
+  media: { url: string; type: string }[]
 }
 
 export default function TweetPreview({ tweets, media }: TweetPreviewProps) {
