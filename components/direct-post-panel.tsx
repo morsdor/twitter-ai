@@ -53,11 +53,11 @@ export default function DirectPostPanel() {
       const updatedMedia = [...existingMedia, ...newMedia];
 
       // Clean up any previous object URLs
-      newMedia.forEach((item) => {
-        if (item.file) {
-          URL.revokeObjectURL(item.url);
-        }
-      });
+      // newMedia.forEach((item) => {
+      //   if (item.file) {
+      //     URL.revokeObjectURL(item.url);
+      //   }
+      // });
 
       return updatedMedia;
     });

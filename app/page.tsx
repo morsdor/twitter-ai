@@ -87,11 +87,11 @@ export default function Home() {
       const updatedMedia = [...prevMedia, ...newMedia];
 
       // Clean up any previous object URLs
-      newMedia.forEach((item) => {
-        if (item.file) {
-          URL.revokeObjectURL(item.url);
-        }
-      });
+      // newMedia.forEach((item) => {
+      //   if (item.file) {
+      //     URL.revokeObjectURL(item.url);
+      //   }
+      // });
 
       return updatedMedia;
     });
