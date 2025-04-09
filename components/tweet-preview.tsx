@@ -1,9 +1,16 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Card, CardContent } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+
+type NewMedia = {
+  tweetIndex: number;
+  url: string;
+  type: string;
+  file?: File;
+};
 
 interface TweetPreviewProps {
-  tweets: string[]
-  media: { url: string; type: string }[]
+  tweets: string[];
+  media: NewMedia[];
 }
 
 export default function TweetPreview({ tweets, media }: TweetPreviewProps) {
@@ -14,7 +21,10 @@ export default function TweetPreview({ tweets, media }: TweetPreviewProps) {
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
               <Avatar>
-                <AvatarImage src="/placeholder.svg?height=40&width=40" alt="User" />
+                <AvatarImage
+                  src="/placeholder.svg?height=40&width=40"
+                  alt="User"
+                />
                 <AvatarFallback>UN</AvatarFallback>
               </Avatar>
               <div className="space-y-1">
@@ -25,7 +35,11 @@ export default function TweetPreview({ tweets, media }: TweetPreviewProps) {
                 <p className="whitespace-pre-wrap">{tweet}</p>
 
                 {index === 0 && media.length > 0 && (
-                  <div className={`grid ${media.length > 1 ? "grid-cols-2" : "grid-cols-1"} gap-2 mt-3`}>
+                  <div
+                    className={`grid ${
+                      media.length > 1 ? "grid-cols-2" : "grid-cols-1"
+                    } gap-2 mt-3`}
+                  >
                     {media.map((item, mediaIndex) => (
                       <img
                         key={mediaIndex}
@@ -46,5 +60,5 @@ export default function TweetPreview({ tweets, media }: TweetPreviewProps) {
         </Card>
       ))}
     </div>
-  )
+  );
 }

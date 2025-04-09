@@ -5,17 +5,20 @@ interface TweetMedia {
   url: string;
   type: string;
   file: File;
+  tweetIndex: number;
 }
 
 export async function POST(req: Request) {
   try {
     // Read tweets from FormData
     const formData = await req.formData();
-    const tweets = JSON.parse(formData.get("tweets") as string);
-    const mediaFiles: File[] = [];
-    for (let i = 0; i < 10; i++) {
+    const tweets = JSON.parse(formData.get("tweets") as string) as string[];
+    const mediaFiles: TweetMedia[] = [];
+    for (let i = 0; i < 100; i++) {
       // Adjust 10 based on your max media count
-      const file = formData.get(`media[${i}]`) as File;
+      const file = JSON.parse(
+        formData.get(`media[${i}]`) as string
+      ) as TweetMedia | null;
       if (file) {
         mediaFiles.push(file);
       }
@@ -29,11 +32,15 @@ export async function POST(req: Request) {
     }
 
     // Upload media files first if any
-    const mediaIds: string[] = [];
+    const mediaIds: { mediaId: string; tweetIndex: number }[] = [];
     if (mediaFiles && mediaFiles.length > 0) {
       for (const mediaFile of mediaFiles) {
-        const mediaId = await uploadMedia({file: mediaFile, mimeType: mediaFile.type});
-        mediaIds.push(mediaId);
+        const mediaId = await uploadMedia({
+          file: mediaFile.file,
+          mimeType: mediaFile.type,
+          tweetIndex: mediaFile.tweetIndex,
+        });
+        mediaIds.push({ mediaId, tweetIndex: mediaFile.tweetIndex });
       }
     }
 
@@ -41,14 +48,18 @@ export async function POST(req: Request) {
 
     if (tweets.length === 1) {
       // Single tweet
-      const tweetId = await postTweet(tweets[0], mediaIds);
+      const mediaList = mediaIds
+        .filter((m) => m.tweetIndex === 0)
+        .map((m) => m.mediaId);
+      const tweetId = await postTweet(tweets[0], mediaList);
       tweetIds = [tweetId];
     } else {
       // Thread of tweets
       const tweetMedia: TweetMedia[] = mediaFiles.map((m) => ({
         url: "",
         type: m.type,
-        file: m,
+        file: m.file,
+        tweetIndex: m.tweetIndex,
       }));
       tweetIds = await postThread(tweets, tweetMedia);
     }

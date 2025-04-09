@@ -1,29 +1,31 @@
-"use client"
-import { Textarea } from "@/components/ui/textarea"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { X, Plus, Trash2 } from "lucide-react"
-import { useEffect, useRef } from "react"
+"use client";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { X, Plus, Trash2 } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 interface TweetEditorProps {
-  tweets: string[]
+  tweets: string[];
   media: {
-    tweetIndex: number
-    url: string
-    type: string
-    file?: File
-  }[]
-  onTweetChange: (index: number, text: string) => void
-  onMediaAdd: (tweetIndex: number, media: {
-    tweetIndex: number
-    url: string
-    type: string
-    file?: File
-  }[]) => void
-  onMediaRemove: (index: number) => void
-  onAddTweet: () => void
-  onRemoveTweet: (index: number) => void
+    tweetIndex: number;
+    url: string;
+    type: string;
+    file?: File;
+  }[];
+  onTweetChange: (index: number, text: string) => void;
+  onMediaAdd: (tweetIndex: number, media: NewMedia[]) => void;
+  onMediaRemove: (index: number) => void;
+  onAddTweet: () => void;
+  onRemoveTweet: (index: number) => void;
 }
+
+type NewMedia = {
+  tweetIndex: number;
+  url: string;
+  type: string;
+  file?: File;
+};
 
 export default function TweetEditor({
   tweets,
@@ -34,7 +36,7 @@ export default function TweetEditor({
   onAddTweet,
   onRemoveTweet,
 }: TweetEditorProps) {
-  const mediaRef = useRef<Array<{ url: string; file?: File }>>([]);
+  const mediaRef = useRef<NewMedia[]>([]);
 
   // Cleanup object URLs when component unmounts
   useEffect(() => {
@@ -43,61 +45,59 @@ export default function TweetEditor({
     };
   }, []);
 
-  const cleanupObjectUrls = (mediaItems: Array<{ url: string; file?: File }>) => {
-    mediaItems.forEach(item => {
+  const cleanupObjectUrls = (
+    mediaItems: Array<{ url: string; file?: File }>
+  ) => {
+    mediaItems.forEach((item) => {
       if (item.file) {
         URL.revokeObjectURL(item.url);
       }
     });
   };
 
-  const handleFileSelect = (tweetIndex: number, event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (
+    tweetIndex: number,
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
     // Clean up existing object URLs for this tweet
-    const existingMedia = media.filter(m => m.tweetIndex === tweetIndex);
-    cleanupObjectUrls(existingMedia);
+    // const existingMedia = media.filter(m => m.tweetIndex === tweetIndex);
+    // cleanupObjectUrls(existingMedia);
 
-    const newMedia: Array<{
-      tweetIndex: number;
-      url: string;
-      type: string;
-      file?: File;
-    }> = Array.from(files).map(file => ({
+    const newMedia: Array<NewMedia> = Array.from(files).map((file) => ({
       tweetIndex: tweetIndex,
       url: URL.createObjectURL(file),
       type: file.type,
-      file
+      file,
     }));
 
-    
-
-    // Update the media ref
-    mediaRef.current = newMedia;
+    const updatedCurrentMedia = [...mediaRef.current, ...newMedia];
+    mediaRef.current = updatedCurrentMedia;
 
     // Get existing media for other tweets
-    const otherMedia = media.filter(m => m.tweetIndex !== tweetIndex);
-    
-    // Update the media array
-    const allMedia = [...otherMedia, ...newMedia];
-    
+    // const otherMedia = media.filter(m => m.tweetIndex !== tweetIndex);
+
+    // // Update the media array
+    // const allMedia = [...otherMedia, ...newMedia];
+
     // Call onMediaAdd with the entire updated media array
-    onMediaAdd(tweetIndex, allMedia);
-  }
+    onMediaAdd(tweetIndex, updatedCurrentMedia);
+  };
 
   const MediaDisplay = ({ tweetIndex }: { tweetIndex: number }) => {
-    const tweetMedia = media.filter(m => m.tweetIndex === tweetIndex);
+    const tweetMedia = media.filter((m) => m.tweetIndex === tweetIndex);
 
     // Cleanup old URLs when media changes
     useEffect(() => {
-      const oldUrls = mediaRef.current.map(item => item.url);
+      const oldUrls = mediaRef.current.map((item) => item.url);
       return () => {
         cleanupObjectUrls(mediaRef.current);
         // Create new object URLs for the new media
-        mediaRef.current = tweetMedia.map(item => ({
+        mediaRef.current = tweetMedia.map((item) => ({
           ...item,
-          url: URL.createObjectURL(item.file!)
+          url: URL.createObjectURL(item.file!),
         }));
       };
     }, [tweetMedia]);
@@ -109,7 +109,7 @@ export default function TweetEditor({
         {tweetMedia.map((item, index) => (
           <div key={index} className="relative group">
             <div className="rounded-md overflow-hidden">
-              {item.type === 'video' ? (
+              {item.type === "video" ? (
                 <video
                   src={mediaRef.current[index].url}
                   className="w-full h-auto object-cover"
@@ -152,12 +152,21 @@ export default function TweetEditor({
         <div key={tweetIndex} className="space-y-2 border p-4 rounded-md">
           <div className="flex justify-between items-center">
             <h3 className="text-sm font-medium">
-              {tweets.length > 1 ? `Tweet ${tweetIndex + 1} of ${tweets.length}` : "Your Tweet"}
+              {tweets.length > 1
+                ? `Tweet ${tweetIndex + 1} of ${tweets.length}`
+                : "Your Tweet"}
             </h3>
             <div className="flex items-center gap-2">
-              <Badge variant="outline">{280 - tweet.length} characters left</Badge>
+              <Badge variant="outline">
+                {280 - tweet.length} characters left
+              </Badge>
               {tweets.length > 1 && (
-                <Button variant="ghost" size="icon" onClick={() => onRemoveTweet(tweetIndex)} aria-label="Remove tweet">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onRemoveTweet(tweetIndex)}
+                  aria-label="Remove tweet"
+                >
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               )}
@@ -174,7 +183,10 @@ export default function TweetEditor({
           <div className="mt-4">
             <h3 className="text-sm font-medium mb-2">Add Media</h3>
             <div className="flex gap-2">
-              <label htmlFor={`media-upload-${tweetIndex}`} className="relative w-full">
+              <label
+                htmlFor={`media-upload-${tweetIndex}`}
+                className="relative w-full"
+              >
                 <input
                   type="file"
                   id={`media-upload-${tweetIndex}`}
@@ -194,10 +206,15 @@ export default function TweetEditor({
         </div>
       ))}
 
-      <Button variant="outline" onClick={onAddTweet} className="w-full" data-testid="add-tweet-button">
+      <Button
+        variant="outline"
+        onClick={onAddTweet}
+        className="w-full"
+        data-testid="add-tweet-button"
+      >
         <Plus className="h-4 w-4 mr-2" />
         Add Another Tweet
       </Button>
     </div>
-  )
+  );
 }

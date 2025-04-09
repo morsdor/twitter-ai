@@ -1,84 +1,94 @@
-"use client"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, Send } from "lucide-react"
-import TweetEditor from "@/components/tweet-editor"
-import TweetPreview from "@/components/tweet-preview"
+"use client";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Loader2, Send } from "lucide-react";
+import TweetEditor from "@/components/tweet-editor";
+import TweetPreview from "@/components/tweet-preview";
+
+type NewMedia = {
+  tweetIndex: number;
+  url: string;
+  type: string;
+  file?: File;
+};
 
 export default function DirectPostPanel() {
-  const [tweets, setTweets] = useState<string[]>([""])
-  const [media, setMedia] = useState<{ tweetIndex: number; url: string; type: string; file?: File }[]>([])
-  const [isPosting, setIsPosting] = useState(false)
-  const [view, setView] = useState<"edit" | "preview">("edit")
+  const [tweets, setTweets] = useState<string[]>([""]);
+  const [media, setMedia] = useState<NewMedia[]>([]);
+  const [isPosting, setIsPosting] = useState(false);
+  const [view, setView] = useState<"edit" | "preview">("edit");
 
   const handleTweetEdit = (index: number, newText: string) => {
-    const newTweets = [...tweets]
-    newTweets[index] = newText
-    setTweets(newTweets)
-  }
+    const newTweets = [...tweets];
+    newTweets[index] = newText;
+    setTweets(newTweets);
+  };
 
   const handleAddTweet = () => {
-    setTweets([...tweets, ""])
-  }
+    setTweets([...tweets, ""]);
+  };
 
   const handleRemoveTweet = (index: number) => {
-    if (tweets.length <= 1) return
-    const newTweets = [...tweets]
-    newTweets.splice(index, 1)
-    setTweets(newTweets)
-  }
+    if (tweets.length <= 1) return;
+    const newTweets = [...tweets];
+    newTweets.splice(index, 1);
+    setTweets(newTweets);
+  };
 
-  const handleMediaUpload = (tweetIndex: number, newMedia: Array<{
-    tweetIndex: number;
-    url: string;
-    type: string;
-    file?: File;
-  }>) => {
-    setMedia(prevMedia => {
+  const handleMediaUpload = (tweetIndex: number, newMedia: Array<NewMedia>) => {
+    setMedia((prevMedia) => {
       // Remove existing media for this tweet
-      const existingMedia = prevMedia.filter(m => m.tweetIndex !== tweetIndex);
-      
+      const existingMedia = prevMedia.filter(
+        (m) => m.tweetIndex !== tweetIndex
+      );
+
       // Add new media
       const updatedMedia = [...existingMedia, ...newMedia];
-      
+
       // Clean up any previous object URLs
-      newMedia.forEach(item => {
+      newMedia.forEach((item) => {
         if (item.file) {
           URL.revokeObjectURL(item.url);
         }
       });
-      
+
       return updatedMedia;
     });
-  }
+  };
 
   const removeMedia = (index: number) => {
-    setMedia(media.filter((_, i) => i !== index))
-  }
+    setMedia(media.filter((_, i) => i !== index));
+  };
 
   const handlePostTweets = async () => {
     if (tweets.some((tweet) => !tweet.trim())) {
-      alert("Please fill in all tweets before posting")
-      return
+      alert("Please fill in all tweets before posting");
+      return;
     }
 
-    setIsPosting(true)
+    setIsPosting(true);
 
     try {
       // Create FormData for file uploads
-      const formData = new FormData()
-      
+      const formData = new FormData();
+
       // Add tweets as JSON string
-      formData.append('tweets', JSON.stringify(tweets))
-      
+      formData.append("tweets", JSON.stringify(tweets));
+
       // Add media files
       if (media && media.length > 0) {
         media.forEach((mediaItem, index) => {
           if (mediaItem.file) {
-            formData.append(`media[${index}]`, mediaItem.file)
+            formData.append(`media[${index}]`, mediaItem.file);
           }
-        })
+        });
       }
 
       console.log(formData);
@@ -86,24 +96,24 @@ export default function DirectPostPanel() {
       const response = await fetch("/api/post-tweet", {
         method: "POST",
         body: formData,
-      })
+      });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json()
-      alert("Tweets posted successfully!")
-      setIsPosting(false)
+      const data = await response.json();
+      alert("Tweets posted successfully!");
+      setIsPosting(false);
       // Reset form
-      setTweets(["", "", ""])
-      setMedia([])
+      setTweets(["", "", ""]);
+      setMedia([]);
     } catch (error) {
-      console.error("Error posting tweets:", error)
-      alert("Failed to post tweets. Please try again.")
-      setIsPosting(false)
+      console.error("Error posting tweets:", error);
+      alert("Failed to post tweets. Please try again.");
+      setIsPosting(false);
     }
-  }
+  };
 
   return (
     <Card>
@@ -126,7 +136,10 @@ export default function DirectPostPanel() {
         )}
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={() => setView(view === "edit" ? "preview" : "edit")}>
+        <Button
+          variant="outline"
+          onClick={() => setView(view === "edit" ? "preview" : "edit")}
+        >
           {view === "edit" ? "Preview" : "Edit"}
         </Button>
         <Button
@@ -148,5 +161,5 @@ export default function DirectPostPanel() {
         </Button>
       </CardFooter>
     </Card>
-  )
+  );
 }

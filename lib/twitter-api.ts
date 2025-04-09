@@ -11,6 +11,7 @@ const client = new TwitterApi({
 interface TweetMedia {
   file: Buffer | Uint8Array | { arrayBuffer: () => Promise<ArrayBuffer> };
   mimeType?: string;
+  tweetIndex: number;
 }
 
 export async function uploadMedia(media: TweetMedia): Promise<string> {
@@ -89,16 +90,17 @@ export async function postThread(
   try {
     // Upload media first if any
     const mediaIds = await Promise.all(
-      media.map(async (m) => await uploadMedia(m))
+      media.map(async (m) => {
+        const mediaId = await uploadMedia(m);
+        return { mediaId, tweetIndex: m.tweetIndex };
+      })
     );
 
-    // Post the first tweet with media
-    const firstTweetId = await postTweet(tweets[0], mediaIds);
-    tweetIds.push(firstTweetId);
-
-    // Post the rest of the tweets as replies
-    for (let i = 1; i < tweets.length; i++) {
-      const tweetId = await postTweet(tweets[i], [], tweetIds[i - 1]);
+    for (let i = 0; i < tweets.length; i++) {
+      const mediaList = mediaIds
+        .filter((m) => m.tweetIndex === i)
+        .map((m) => m.mediaId);
+      const tweetId = await postTweet(tweets[i], mediaList, tweetIds[i - 1]);
       tweetIds.push(tweetId);
     }
 

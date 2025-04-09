@@ -16,13 +16,18 @@ import TweetEditor from "@/components/tweet-editor";
 import TweetPreview from "@/components/tweet-preview";
 import DirectPostPanel from "@/components/direct-post-panel";
 
+type NewMedia = {
+  tweetIndex: number;
+  url: string;
+  type: string;
+  file?: File;
+};
+
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [tweets, setTweets] = useState<string[]>([]);
-  const [media, setMedia] = useState<
-    { tweetIndex: number; url: string; type: string; file?: File }[]
-  >([]);
+  const [media, setMedia] = useState<NewMedia[]>([]);
   const [isPosting, setIsPosting] = useState(false);
   const [activeTab, setActiveTab] = useState("generate");
 
@@ -74,23 +79,12 @@ export default function Home() {
     setTweets(newTweets);
   };
 
-  const handleMediaUpload = (
-    tweetIndex: number,
-    newMedia: Array<{
-      tweetIndex: number;
-      url: string;
-      type: string;
-      file?: File;
-    }>
-  ) => {
+  const handleMediaUpload = (tweetIndex: number, newMedia: Array<NewMedia>) => {
     setMedia((prevMedia) => {
       // Remove existing media for this tweet
-      const existingMedia = prevMedia.filter(
-        (m) => m.tweetIndex !== tweetIndex
-      );
 
       // Add new media
-      const updatedMedia = [...existingMedia, ...newMedia];
+      const updatedMedia = [...prevMedia, ...newMedia];
 
       // Clean up any previous object URLs
       newMedia.forEach((item) => {
@@ -126,7 +120,7 @@ export default function Home() {
       if (media && media.length > 0) {
         media.forEach((mediaItem, index) => {
           if (mediaItem.file) {
-            formData.append(`media[${index}]`, mediaItem.file);
+            formData.append(`media[${index}]`, JSON.stringify(mediaItem));
           }
         });
       }
