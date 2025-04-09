@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     const shouldGenerateThread = prompt.length > 50;
 
     const systemPrompt = shouldGenerateThread
-      ? "You are an expert at creating engaging Twitter/X threads. Create a thread of 10-15 tweets that are concise, engaging, and shareable. Each tweet should be under 280 characters and build on the previous one. Mark each individual tweet with a number (e.g., 'Tweet 1:')."
+      ? "You are an expert at creating engaging Twitter/X threads. Create a thread of 10-15 tweets that are concise, engaging, and shareable. Each tweet should be between 250 - 280 characters and build on the previous one. Mark each individual tweet with a number (e.g., 'Tweet 1:')."
       : "You are an expert at creating engaging Twitter/X posts. Create a single tweet that is concise, engaging, and shareable. The tweet should be under 280 characters.";
 
     const { text } = await ai.models.generateContent({

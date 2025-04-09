@@ -47,11 +47,7 @@ export async function POST(req: Request) {
       // Thread of tweets
       const tweetMedia: TweetMedia[] = mediaFiles.map((m) => ({
         url: "",
-        type: m.type.startsWith("image/")
-          ? "image"
-          : m.type.startsWith("video/")
-          ? "video"
-          : "gif",
+        type: m.type,
         file: m,
       }));
       tweetIds = await postThread(tweets, tweetMedia);
