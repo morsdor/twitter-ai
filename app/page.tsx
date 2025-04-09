@@ -1,27 +1,35 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, Send } from "lucide-react"
-import TweetEditor from "@/components/tweet-editor"
-import TweetPreview from "@/components/tweet-preview"
-import DirectPostPanel from "@/components/direct-post-panel"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Send } from "lucide-react";
+import TweetEditor from "@/components/tweet-editor";
+import TweetPreview from "@/components/tweet-preview";
+import DirectPostPanel from "@/components/direct-post-panel";
 
 export default function Home() {
-  const [prompt, setPrompt] = useState("")
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [tweets, setTweets] = useState<string[]>([])
-  const [media, setMedia] = useState<{ tweetIndex: number; url: string; type: "image" | "video" | "gif" }[]>([])
-  const [isPosting, setIsPosting] = useState(false)
-  const [activeTab, setActiveTab] = useState("generate")
+  const [prompt, setPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [tweets, setTweets] = useState<string[]>([]);
+  const [media, setMedia] = useState<
+    { tweetIndex: number; url: string; type: string; file?: File }[]
+  >([]);
+  const [isPosting, setIsPosting] = useState(false);
+  const [activeTab, setActiveTab] = useState("generate");
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) return
+    if (!prompt.trim()) return;
 
-    setIsGenerating(true)
+    setIsGenerating(true);
 
     try {
       // In a real app, this would call the API
@@ -29,88 +37,127 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
-      })
+      });
 
-      if (!response.ok) throw new Error("Failed to generate tweets")
+      if (!response.ok) throw new Error("Failed to generate tweets");
 
-      const data = await response.json()
+      const data = await response.json();
       setTweets(
         data.tweets || [
           prompt.length > 50
             ? "Here's the first tweet in the thread based on your request! #AI #Content"
             : "Here's a single tweet based on your request! This is AI-generated content that's ready to share. #AI #Content",
-        ],
-      )
-      setActiveTab("edit")
+        ]
+      );
+      setActiveTab("edit");
     } catch (error) {
-      console.error("Error generating content:", error)
+      console.error("Error generating content:", error);
     } finally {
-      setIsGenerating(false)
+      setIsGenerating(false);
     }
-  }
+  };
 
   const handleAddTweet = () => {
-    setTweets([...tweets, ""])
-  }
+    setTweets([...tweets, ""]);
+  };
 
   const handleTweetEdit = (index: number, newText: string) => {
-    const newTweets = [...tweets]
-    newTweets[index] = newText
-    setTweets(newTweets)
-  }
+    const newTweets = [...tweets];
+    newTweets[index] = newText;
+    setTweets(newTweets);
+  };
 
   const handleRemoveTweet = (index: number) => {
-    if (tweets.length <= 1) return
-    const newTweets = [...tweets]
-    newTweets.splice(index, 1)
-    setTweets(newTweets)
-  }
+    if (tweets.length <= 1) return;
+    const newTweets = [...tweets];
+    newTweets.splice(index, 1);
+    setTweets(newTweets);
+  };
 
-  const handleMediaUpload = (type: "image" | "video" | "gif", tweetIndex: number) => {
-    // In a real app, this would open a file picker and upload the file
-    const mockMediaUrls = {
-      image: "/placeholder.svg?height=400&width=400",
-      video: "/placeholder.svg?height=400&width=400",
-      gif: "/placeholder.svg?height=400&width=400",
-    }
+  const handleMediaUpload = (
+    tweetIndex: number,
+    newMedia: Array<{
+      tweetIndex: number;
+      url: string;
+      type: string;
+      file?: File;
+    }>
+  ) => {
+    setMedia((prevMedia) => {
+      // Remove existing media for this tweet
+      const existingMedia = prevMedia.filter(
+        (m) => m.tweetIndex !== tweetIndex
+      );
 
-    setMedia([...media, { tweetIndex, url: mockMediaUrls[type], type }])
-  }
+      // Add new media
+      const updatedMedia = [...existingMedia, ...newMedia];
+
+      // Clean up any previous object URLs
+      newMedia.forEach((item) => {
+        if (item.file) {
+          URL.revokeObjectURL(item.url);
+        }
+      });
+
+      return updatedMedia;
+    });
+  };
 
   const removeMedia = (index: number) => {
-    setMedia(media.filter((_, i) => i !== index))
-  }
+    setMedia(media.filter((_, i) => i !== index));
+  };
 
   const handlePostTweets = async () => {
-    setIsPosting(true)
+    if (tweets.some((tweet) => !tweet.trim())) {
+      alert("Please fill in all tweets before posting");
+      return;
+    }
+
+    setIsPosting(true);
 
     try {
-      // In a real app, this would call the API
+      // Create FormData for file uploads
+      const formData = new FormData();
+
+      // Add tweets as JSON string
+      formData.append("tweets", JSON.stringify(tweets));
+
+      // Add media files
+      if (media && media.length > 0) {
+        media.forEach((mediaItem, index) => {
+          if (mediaItem.file) {
+            formData.append(`media[${index}]`, mediaItem.file);
+          }
+        });
+      }
+
       const response = await fetch("/api/post-tweet", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tweets, media }),
-      })
+        body: formData,
+      });
 
-      if (!response.ok) throw new Error("Failed to post tweets")
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      alert("Tweets posted successfully!")
-
-      // Reset the form
-      setPrompt("")
-      setTweets([])
-      setMedia([])
-      setActiveTab("generate")
+      const data = await response.json();
+      alert("Tweets posted successfully!");
+      setIsPosting(false);
+      // Reset form
+      setTweets(["", "", ""]);
+      setMedia([]);
     } catch (error) {
-      console.error("Error posting tweets:", error)
-    } finally {
-      setIsPosting(false)
+      console.error("Error posting tweets:", error);
+      alert("Failed to post tweets. Please try again.");
+      setIsPosting(false);
     }
-  }
+  };
 
   return (
     <main className="container mx-auto py-8 px-4 max-w-3xl">
-      <h1 className="text-3xl font-bold mb-6 text-center">AI Tweet Generator</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        AI Tweet Generator
+      </h1>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4 mb-6">
@@ -138,7 +185,11 @@ export default function Home() {
               />
             </CardContent>
             <CardFooter>
-              <Button onClick={handleGenerate} disabled={isGenerating || !prompt.trim()} className="w-full">
+              <Button
+                onClick={handleGenerate}
+                disabled={isGenerating || !prompt.trim()}
+                className="w-full"
+              >
                 {isGenerating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -169,7 +220,10 @@ export default function Home() {
               />
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button variant="outline" onClick={() => setActiveTab("generate")}>
+              <Button
+                variant="outline"
+                onClick={() => setActiveTab("generate")}
+              >
                 Back
               </Button>
               <Button onClick={() => setActiveTab("preview")}>Preview</Button>
@@ -211,5 +265,5 @@ export default function Home() {
         </TabsContent>
       </Tabs>
     </main>
-  )
+  );
 }
