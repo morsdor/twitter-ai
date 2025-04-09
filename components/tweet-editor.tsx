@@ -2,9 +2,8 @@
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { ImageIcon, FileVideo, Smile, X, Plus, Trash2 } from "lucide-react"
-import { useState, useEffect, useRef } from "react"
+import { X, Plus, Trash2 } from "lucide-react"
+import { useEffect, useRef } from "react"
 
 interface TweetEditorProps {
   tweets: string[]
@@ -15,10 +14,10 @@ interface TweetEditorProps {
     file?: File
   }[]
   onTweetChange: (index: number, text: string) => void
-  onMediaAdd: (type: "video" | "image" | "gif", tweetIndex: number, media: {
+  onMediaAdd: (tweetIndex: number, media: {
     tweetIndex: number
     url: string
-    type: "image" | "video" | "gif"
+    type: string
     file?: File
   }[]) => void
   onMediaRemove: (index: number) => void
@@ -63,14 +62,16 @@ export default function TweetEditor({
     const newMedia: Array<{
       tweetIndex: number;
       url: string;
-      type: "image" | "video" | "gif";
+      type: string;
       file?: File;
     }> = Array.from(files).map(file => ({
       tweetIndex: tweetIndex,
       url: URL.createObjectURL(file),
-      type: file.type.includes('image/') ? 'image' : file.type.includes('video/') ? 'video' : 'gif',
+      type: file.type,
       file
     }));
+
+    
 
     // Update the media ref
     mediaRef.current = newMedia;
@@ -82,7 +83,7 @@ export default function TweetEditor({
     const allMedia = [...otherMedia, ...newMedia];
     
     // Call onMediaAdd with the entire updated media array
-    onMediaAdd('image', tweetIndex, allMedia);
+    onMediaAdd(tweetIndex, allMedia);
   }
 
   const MediaDisplay = ({ tweetIndex }: { tweetIndex: number }) => {

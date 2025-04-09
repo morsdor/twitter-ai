@@ -1,57 +1,110 @@
-// This would be a real implementation using the X API
-// For now, we're just mocking the functionality
+import { SendTweetV2Params, TwitterApi } from "twitter-api-v2";
 
-// Mock API keys - in a real app, these would be environment variables
-const API_KEY = "YOUR_X_API_KEY"
-const API_SECRET = "YOUR_X_API_SECRET"
-const ACCESS_TOKEN = "YOUR_X_ACCESS_TOKEN"
-const ACCESS_SECRET = "YOUR_X_ACCESS_SECRET"
+// Initialize the Twitter API client using environment variables
+const client = new TwitterApi({
+  appKey: process.env.TWITTER_API_KEY!,
+  appSecret: process.env.TWITTER_API_SECRET!,
+  accessToken: process.env.TWITTER_ACCESS_TOKEN!,
+  accessSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET!,
+});
 
-export interface TweetMedia {
-  url: string
-  type: "image" | "video" | "gif"
+interface TweetMedia {
+  file: Buffer | Uint8Array | { arrayBuffer: () => Promise<ArrayBuffer> };
+  mimeType?: string;
 }
 
 export async function uploadMedia(media: TweetMedia): Promise<string> {
-  // In a real implementation, this would upload the media to X and return the media ID
-  console.log("Uploading media:", media)
+  try {
+    let buffer: Buffer | undefined;
 
-  // Mock delay
-  await new Promise((resolve) => setTimeout(resolve, 500))
+    if (media.file instanceof File || media.file instanceof Blob) {
+      buffer = Buffer.from(await media.file.arrayBuffer());
+    } else if (Buffer.isBuffer(media.file)) {
+      buffer = media.file;
+    } else if (media.file instanceof Uint8Array) {
+      buffer = Buffer.from(media.file);
+    }
 
-  return `mock-media-id-${Date.now()}`
+    if (!buffer) {
+      throw new Error("Invalid media file");
+    }
+
+    const mediaId = await client.v1.uploadMedia(buffer, {
+      mimeType: media.mimeType,
+    });
+    return mediaId;
+  } catch (error) {
+    console.error("Error uploading media:", error);
+    throw error;
+  }
+}
+export async function postTweet(
+  text: string,
+  mediaIds: string[] = [],
+  replyToId?: string
+): Promise<string> {
+  try {
+    // First, check if mediaIds is actually an array
+    if (mediaIds && !Array.isArray(mediaIds)) {
+      mediaIds = [mediaIds]; // Convert single ID to array
+    }
+
+    // Make sure mediaIds contains strings, not numbers
+    if (mediaIds) {
+      mediaIds = mediaIds.map((id) => String(id));
+    }
+
+    // Then try posting with better error handling
+    try {
+      const tweetOptions: Partial<SendTweetV2Params> = {};
+
+      if (mediaIds && mediaIds.length > 0) {
+        tweetOptions.media = { media_ids: mediaIds };
+      }
+
+      if (replyToId) {
+        tweetOptions.reply = { in_reply_to_tweet_id: String(replyToId) };
+      }
+
+      console.log("Tweet options:", JSON.stringify(tweetOptions));
+
+      const tweet = await client.v2.tweet(text, tweetOptions);
+      return tweet.data.id;
+    } catch (error) {
+      console.error("Detailed error:", error);
+      throw error;
+    }
+  } catch (error) {
+    console.error("Error posting tweet:", error);
+    throw error;
+  }
 }
 
-export async function postTweet(text: string, mediaIds: string[] = [], replyToId?: string): Promise<string> {
-  // In a real implementation, this would post a tweet to X and return the tweet ID
-  console.log("Posting tweet:", { text, mediaIds, replyToId })
-
-  // Mock delay
-  await new Promise((resolve) => setTimeout(resolve, 1000))
-
-  return `mock-tweet-id-${Date.now()}`
-}
-
-export async function postThread(tweets: string[], media: TweetMedia[] = []): Promise<string[]> {
-  const tweetIds: string[] = []
+export async function postThread(
+  tweets: string[],
+  media: TweetMedia[]
+): Promise<string[]> {
+  const tweetIds: string[] = [];
 
   try {
     // Upload media first if any
-    const mediaIds = await Promise.all(media.map(async (m) => await uploadMedia(m)))
+    const mediaIds = await Promise.all(
+      media.map(async (m) => await uploadMedia(m))
+    );
 
     // Post the first tweet with media
-    const firstTweetId = await postTweet(tweets[0], mediaIds)
-    tweetIds.push(firstTweetId)
+    const firstTweetId = await postTweet(tweets[0], mediaIds);
+    tweetIds.push(firstTweetId);
 
     // Post the rest of the tweets as replies
     for (let i = 1; i < tweets.length; i++) {
-      const tweetId = await postTweet(tweets[i], [], tweetIds[i - 1])
-      tweetIds.push(tweetId)
+      const tweetId = await postTweet(tweets[i], [], tweetIds[i - 1]);
+      tweetIds.push(tweetId);
     }
 
-    return tweetIds
+    return tweetIds;
   } catch (error) {
-    console.error("Error posting thread:", error)
-    throw error
+    console.error("Error posting thread:", error);
+    throw error;
   }
 }

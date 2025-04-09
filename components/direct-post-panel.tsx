@@ -29,7 +29,7 @@ export default function DirectPostPanel() {
     setTweets(newTweets)
   }
 
-  const handleMediaUpload = (type: "image" | "video" | "gif", tweetIndex: number, newMedia: Array<{
+  const handleMediaUpload = (tweetIndex: number, newMedia: Array<{
     tweetIndex: number;
     url: string;
     type: "image" | "video" | "gif";
@@ -66,24 +66,41 @@ export default function DirectPostPanel() {
     setIsPosting(true)
 
     try {
-      // In a real app, this would call the API
+      // Create FormData for file uploads
+      const formData = new FormData()
+      
+      // Add tweets as JSON string
+      formData.append('tweets', JSON.stringify(tweets))
+      
+      // Add media files
+      if (media && media.length > 0) {
+        media.forEach((mediaItem, index) => {
+          if (mediaItem.file) {
+            formData.append(`media[${index}]`, mediaItem.file)
+          }
+        })
+      }
+
+      console.log(formData);
+
       const response = await fetch("/api/post-tweet", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tweets, media }),
+        body: formData,
       })
 
-      if (!response.ok) throw new Error("Failed to post tweets")
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
 
+      const data = await response.json()
       alert("Tweets posted successfully!")
-
-      // Reset the form
-      setTweets([""])
+      setIsPosting(false)
+      // Reset form
+      setTweets(["", "", ""])
       setMedia([])
-      setView("edit")
     } catch (error) {
       console.error("Error posting tweets:", error)
-    } finally {
+      alert("Failed to post tweets. Please try again.")
       setIsPosting(false)
     }
   }
