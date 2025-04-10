@@ -1,4 +1,6 @@
 import { SendTweetV2Params, TwitterApi } from "twitter-api-v2";
+import fetch from "node-fetch";
+import { Buffer } from "buffer";
 
 // Initialize the Twitter API client using environment variables
 const client = new TwitterApi({
@@ -9,7 +11,8 @@ const client = new TwitterApi({
 });
 
 interface TweetMedia {
-  file: Buffer | Uint8Array | { arrayBuffer: () => Promise<ArrayBuffer> };
+  url?: string;
+  file?: Buffer | Uint8Array | { arrayBuffer: () => Promise<ArrayBuffer> } | null;
   mimeType?: string;
   tweetIndex: number;
 }
@@ -18,7 +21,21 @@ export async function uploadMedia(media: TweetMedia): Promise<string> {
   try {
     let buffer: Buffer | undefined;
 
-    if (media.file instanceof File || media.file instanceof Blob) {
+    if (media.url) {
+      // Handle blob URLs differently
+      if (media.url.startsWith('blob:')) {
+        // For blob URLs, we need to get the actual file data
+        // This should be handled in the client-side code
+        throw new Error('Cannot process blob URLs directly. Please convert to file data first.');
+      } else {
+        // For regular URLs, fetch the image
+        const response = await fetch(media.url);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image: ${response.statusText}`);
+        }
+        buffer = Buffer.from(await response.arrayBuffer());
+      }
+    } else if (media.file instanceof File || media.file instanceof Blob) {
       buffer = Buffer.from(await media.file.arrayBuffer());
     } else if (Buffer.isBuffer(media.file)) {
       buffer = media.file;
@@ -27,18 +44,20 @@ export async function uploadMedia(media: TweetMedia): Promise<string> {
     }
 
     if (!buffer) {
-      throw new Error("Invalid media file");
+      throw new Error("No valid media data provided");
     }
 
     const mediaId = await client.v1.uploadMedia(buffer, {
-      mimeType: media.mimeType,
+      mimeType: media.mimeType || "image/jpeg",
     });
+
     return mediaId;
   } catch (error) {
     console.error("Error uploading media:", error);
     throw error;
   }
 }
+
 export async function postTweet(
   text: string,
   mediaIds: string[] = [],

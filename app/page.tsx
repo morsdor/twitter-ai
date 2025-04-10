@@ -9,6 +9,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Send } from "lucide-react";
@@ -30,6 +31,9 @@ export default function Home() {
   const [media, setMedia] = useState<NewMedia[]>([]);
   const [isPosting, setIsPosting] = useState(false);
   const [activeTab, setActiveTab] = useState("generate");
+  const [imagePrompt, setImagePrompt] = useState("");
+  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -134,7 +138,6 @@ export default function Home() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
       alert("Tweets posted successfully!");
       setIsPosting(false);
       // Reset form
@@ -147,21 +150,41 @@ export default function Home() {
     }
   };
 
+  const handleGenerateImage = async () => {
+    if (!imagePrompt.trim()) return;
+
+    setIsGeneratingImage(true);
+    setGeneratedImages([]);
+
+    try {
+      const response = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: imagePrompt }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate image");
+
+      const data = await response.json();
+      setGeneratedImages(data.imageUrls || []);
+    } catch (error) {
+      console.error("Error generating image:", error);
+      alert("Failed to generate image. Please try again.");
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
   return (
     <main className="container mx-auto py-8 px-4 max-w-3xl">
-      <h1 className="text-3xl font-bold mb-6 text-center">
-        AI Tweet Generator
-      </h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">AI Tweet Generator</h1>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-6">
+        <TabsList className="grid w-full grid-cols-5 gap-2 mb-6">
           <TabsTrigger value="generate">Generate</TabsTrigger>
-          <TabsTrigger value="edit" disabled={tweets.length === 0}>
-            Edit
-          </TabsTrigger>
-          <TabsTrigger value="preview" disabled={tweets.length === 0}>
-            Preview
-          </TabsTrigger>
+          <TabsTrigger value="image">Generate Image</TabsTrigger>
+          <TabsTrigger value="edit" disabled={tweets.length === 0}>Edit</TabsTrigger>
+          <TabsTrigger value="preview" disabled={tweets.length === 0}>Preview</TabsTrigger>
           <TabsTrigger value="direct-post">Direct Post</TabsTrigger>
         </TabsList>
 
@@ -194,6 +217,56 @@ export default function Home() {
                 )}
               </Button>
             </CardFooter>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="image" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Generate Image</CardTitle>
+              <CardDescription>Describe the image you want to generate</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Textarea
+                  placeholder="Describe the image you want to generate..."
+                  value={imagePrompt}
+                  onChange={(e) => setImagePrompt(e.target.value)}
+                  className="min-h-[100px]"
+                />
+                <Button
+                  onClick={handleGenerateImage}
+                  disabled={isGeneratingImage || !imagePrompt.trim()}
+                  className="w-full"
+                >
+                  {isGeneratingImage ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating Image...
+                    </>
+                  ) : (
+                    "Generate Image"
+                  )}
+                </Button>
+
+                {generatedImages.length > 0 && (
+                  <div className="mt-4">
+                    <h3 className="text-sm font-medium mb-2">Generated Images</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {generatedImages.map((imageUrl, index) => (
+                        <div key={index} className="rounded-lg overflow-hidden">
+                          <img
+                            src={imageUrl}
+                            alt={`Generated image ${index + 1}`}
+                            className="w-full h-auto max-h-[200px] object-contain"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
           </Card>
         </TabsContent>
 

@@ -85,8 +85,18 @@ export default function DirectPostPanel() {
       // Add media files
       if (media && media.length > 0) {
         media.forEach((mediaItem, index) => {
+          // If we have a file, send it directly
           if (mediaItem.file) {
-            formData.append(`media[${index}]`, mediaItem.file);
+            formData.append(`media[${index}]`, mediaItem.file, mediaItem.file.name);
+            formData.append(`mediaType[${index}]`, mediaItem.type);
+            formData.append(`mediaTweetIndex[${index}]`, mediaItem.tweetIndex.toString());
+          } else {
+            // For URLs, keep the current approach
+            formData.append(`media[${index}]`, JSON.stringify({
+              type: mediaItem.type,
+              url: mediaItem.url,
+              tweetIndex: mediaItem.tweetIndex,
+            }));
           }
         });
       }

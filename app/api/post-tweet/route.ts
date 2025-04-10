@@ -2,80 +2,109 @@ import { NextResponse } from "next/server";
 import { uploadMedia, postTweet, postThread } from "@/lib/twitter-api";
 
 interface TweetMedia {
-  url: string;
-  type: string;
-  file: File;
+  mediaId: string;
   tweetIndex: number;
 }
 
 export async function POST(req: Request) {
   try {
-    // Read tweets from FormData
     const formData = await req.formData();
     const tweets = JSON.parse(formData.get("tweets") as string) as string[];
     const mediaFiles: TweetMedia[] = [];
+
+    // Process media files
     for (let i = 0; i < 100; i++) {
-      // Adjust 10 based on your max media count
-      const file = JSON.parse(
-        formData.get(`media[${i}]`) as string
-      ) as TweetMedia | null;
-      if (file) {
-        mediaFiles.push(file);
+      const mediaData = formData.get(`media[${i}]`);
+      const mediaType = formData.get(`mediaType[${i}]`) as string;
+      const mediaTweetIndex = formData.get(`mediaTweetIndex[${i}]`) as string;
+
+      if (!mediaData) break;
+
+      if (mediaData instanceof File) {
+        // Handle direct file upload
+        const file = mediaData;
+        const mediaId = await uploadMedia({
+          file,
+          mimeType: mediaType,
+          tweetIndex: parseInt(mediaTweetIndex),
+        });
+        mediaFiles.push({ mediaId, tweetIndex: parseInt(mediaTweetIndex) });
+      } else {
+        // Handle URL-based media
+        const mediaObj = JSON.parse(mediaData as string);
+        const mediaId = await uploadMedia({
+          url: mediaObj.url,
+          mimeType: mediaObj.type,
+          tweetIndex: parseInt(mediaTweetIndex),
+        });
+        mediaFiles.push({ mediaId, tweetIndex: parseInt(mediaTweetIndex) });
       }
     }
 
+    // Handle three cases:
+    // 1. Single tweet without media
+    // 2. Single tweet with media
+    // 3. Thread of tweets with/without media
+
     if (!tweets || !tweets.length) {
       return NextResponse.json(
-        { error: "Tweets are required" },
+        { error: "No tweets provided" },
         { status: 400 }
       );
     }
 
-    // Upload media files first if any
-    const mediaIds: { mediaId: string; tweetIndex: number }[] = [];
-    if (mediaFiles && mediaFiles.length > 0) {
-      for (const mediaFile of mediaFiles) {
-        const mediaId = await uploadMedia({
-          file: mediaFile.file,
-          mimeType: mediaFile.type,
-          tweetIndex: mediaFile.tweetIndex,
-        });
-        mediaIds.push({ mediaId, tweetIndex: mediaFile.tweetIndex });
+    // Single tweet without media
+    if (tweets.length === 1 && mediaFiles.length === 0) {
+      await postTweet(tweets[0]);
+    } else {
+      // Handle media files first
+      for (let i = 0; i < 100; i++) {
+        const mediaData = formData.get(`media[${i}]`);
+        const mediaType = formData.get(`mediaType[${i}]`) as string;
+        const mediaTweetIndex = formData.get(`mediaTweetIndex[${i}]`) as string;
+
+        if (!mediaData) break;
+
+        if (mediaData instanceof File) {
+          const file = mediaData;
+          const mediaId = await uploadMedia({
+            file,
+            mimeType: mediaType,
+            tweetIndex: parseInt(mediaTweetIndex),
+          });
+          mediaFiles.push({ mediaId, tweetIndex: parseInt(mediaTweetIndex) });
+        } else {
+          const mediaObj = JSON.parse(mediaData as string);
+          const mediaId = await uploadMedia({
+            url: mediaObj.url,
+            mimeType: mediaObj.type,
+            tweetIndex: mediaObj.tweetIndex,
+          });
+          mediaFiles.push({ mediaId, tweetIndex: parseInt(mediaTweetIndex) });
+        }
+      }
+
+      // Single tweet with media
+      if (tweets.length === 1 && mediaFiles.length > 0) {
+        await postTweet(
+          tweets[0],
+          mediaFiles.map((m) => m.mediaId)
+        );
+      } else {
+        // Thread of tweets
+        const tweetMedia: TweetMedia[] = mediaFiles.map((m) => ({
+          mediaId: m.mediaId,
+          tweetIndex: m.tweetIndex,
+        }));
+        await postThread(tweets, tweetMedia);
       }
     }
 
-    let tweetIds: string[];
-
-    if (tweets.length === 1) {
-      // Single tweet
-      const mediaList = mediaIds
-        .filter((m) => m.tweetIndex === 0)
-        .map((m) => m.mediaId);
-      const tweetId = await postTweet(tweets[0], mediaList);
-      tweetIds = [tweetId];
-    } else {
-      // Thread of tweets
-      const tweetMedia: TweetMedia[] = mediaFiles.map((m) => ({
-        url: "",
-        type: m.type,
-        file: m.file,
-        tweetIndex: m.tweetIndex,
-      }));
-      tweetIds = await postThread(tweets, tweetMedia);
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: "Tweets posted successfully",
-      tweetIds,
-    });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error posting tweets:", error);
     return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Failed to post tweets",
-        details: error instanceof Error ? error.stack : undefined,
-      },
+      { error: "Failed to post tweets" },
       { status: 500 }
     );
   }
