@@ -14,6 +14,7 @@ interface TweetEditorProps {
     type: string;
     file?: File;
   }[];
+  mediaUrls: Map<string, string>;
   onTweetChange: (index: number, text: string) => void;
   onMediaAdd: (media: NewMedia[]) => void;
   onMediaRemove: (index: number) => void;
@@ -31,6 +32,7 @@ type NewMedia = {
 export default function TweetEditor({
   tweets,
   media,
+  mediaUrls,
   onTweetChange,
   onMediaAdd,
   onMediaRemove,
@@ -65,7 +67,7 @@ export default function TweetEditor({
 
     const newMedia: Array<NewMedia> = Array.from(files).map((file) => ({
       tweetIndex: tweetIndex,
-      url: URL.createObjectURL(file),
+      url: mediaUrls.get(file.name) || URL.createObjectURL(file),
       type: file.type,
       file,
     }));
@@ -143,7 +145,7 @@ export default function TweetEditor({
             </div>
             <MediaDisplay
               tweetIndex={tweetIndex}
-              media={mediaRef}
+              media={media}
               handleRemoveMedia={handleRemoveMedia}
             />
           </div>

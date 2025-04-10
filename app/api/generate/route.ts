@@ -30,8 +30,11 @@ export async function POST(req: Request) {
     let tweets: string[];
 
     if (shouldGenerateThread && text) {
+      // Remove any ** markdown formatting
+      const cleanText = text.replace(/\*\*([^*]+)\*\*/g, '$1');
+      
       // Split by common tweet separators like "Tweet 1:", "1/", etc.
-      tweets = text
+      tweets = cleanText
         .split(/Tweet \d+:|^\d+\/\d+:|\n\n/)
         .map((t) => t.trim())
         .filter((t) => t.length > 0);

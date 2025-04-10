@@ -101,8 +101,6 @@ export default function DirectPostPanel() {
         });
       }
 
-      console.log(formData);
-
       const response = await fetch("/api/post-tweet", {
         method: "POST",
         body: formData,

@@ -20,10 +20,8 @@ const MediaDisplay = ({
 }) => {
   const tweetMedia = media.filter((m) => m.tweetIndex === tweetIndex);
 
-  // Create a map of URLs to prevent duplicates
   const urlMap = new Map<string, { url: string; type: string }>();
   
-  // Create URLs only for new files and track them
   tweetMedia.forEach((item) => {
     if (item.file) {
       const url = URL.createObjectURL(item.file);
@@ -31,7 +29,6 @@ const MediaDisplay = ({
     }
   });
 
-  // Cleanup function to revoke URLs when component unmounts or media changes
   useEffect(() => {
     return () => {
       urlMap.forEach((item) => {
@@ -45,28 +42,29 @@ const MediaDisplay = ({
   if (tweetMedia.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-2 gap-2 mt-2">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
       {Array.from(urlMap.values()).map((item, index) => (
         <div key={index} className="relative group">
-          <div className="rounded-md overflow-hidden">
+          <div className="rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
             {item.type.startsWith('image/') ? (
               <img
                 src={item.url}
                 alt={`Tweet media ${index + 1}`}
-                className="w-full h-auto max-h-[200px] object-cover"
+                className="w-full h-auto max-h-[200px] object-cover transition-transform duration-300 group-hover:scale-[1.02]"
               />
             ) : item.type.startsWith('video/') ? (
               <video
                 src={item.url}
-                className="w-full h-auto max-h-[200px] object-cover"
+                className="w-full h-auto max-h-[200px] object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                 controls
+                controlsList="nodownload"
               />
             ) : null}
           </div>
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100"
+            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={() => handleRemoveMedia(index)}
           >
             <X className="h-4 w-4" />
