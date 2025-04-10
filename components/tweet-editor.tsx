@@ -15,7 +15,7 @@ interface TweetEditorProps {
     file?: File;
   }[];
   onTweetChange: (index: number, text: string) => void;
-  onMediaAdd: (tweetIndex: number, media: NewMedia[]) => void;
+  onMediaAdd: (media: NewMedia[]) => void;
   onMediaRemove: (index: number) => void;
   onAddTweet: () => void;
   onRemoveTweet: (index: number) => void;
@@ -74,7 +74,7 @@ export default function TweetEditor({
 
     setMediaRef(updatedCurrentMedia);
 
-    onMediaAdd(tweetIndex, updatedCurrentMedia);
+    onMediaAdd(newMedia);
   };
 
   const handleRemoveMedia = (index: number) => {

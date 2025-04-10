@@ -20,18 +20,21 @@ const MediaDisplay = ({
 }) => {
   const tweetMedia = media.filter((m) => m.tweetIndex === tweetIndex);
 
-  const newMediaUrls = tweetMedia.map((item) => ({
-    url: URL.createObjectURL(item.file!),
-    type: item.type,
-  }));
+  // Create a map of URLs to prevent duplicates
+  const urlMap = new Map<string, { url: string; type: string }>();
+  
+  // Create URLs only for new files and track them
+  tweetMedia.forEach((item) => {
+    if (item.file) {
+      const url = URL.createObjectURL(item.file);
+      urlMap.set(url, { url, type: item.type });
+    }
+  });
 
-  // Create URLs when media changes
+  // Cleanup function to revoke URLs when component unmounts or media changes
   useEffect(() => {
-    // Create object URLs for the media
-
-    // Cleanup function to revoke URLs when component unmounts or media changes
     return () => {
-      newMediaUrls.forEach((item) => {
+      urlMap.forEach((item) => {
         if (item.url.startsWith("blob:")) {
           URL.revokeObjectURL(item.url);
         }
@@ -43,27 +46,27 @@ const MediaDisplay = ({
 
   return (
     <div className="grid grid-cols-2 gap-2 mt-2">
-      {newMediaUrls.map((item, index) => (
+      {Array.from(urlMap.values()).map((item, index) => (
         <div key={index} className="relative group">
           <div className="rounded-md overflow-hidden">
-            {item.type === "video" ? (
-              <video
-                src={item.url}
-                className="w-full h-auto object-cover"
-                controls
-              />
-            ) : (
+            {item.type.startsWith('image/') ? (
               <img
                 src={item.url}
-                alt={`Media ${index + 1}`}
-                className="w-full h-auto object-cover"
+                alt={`Tweet media ${index + 1}`}
+                className="w-full h-auto max-h-[200px] object-cover"
               />
-            )}
+            ) : item.type.startsWith('video/') ? (
+              <video
+                src={item.url}
+                className="w-full h-auto max-h-[200px] object-cover"
+                controls
+              />
+            ) : null}
           </div>
           <Button
-            variant="destructive"
+            variant="ghost"
             size="icon"
-            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100"
             onClick={() => handleRemoveMedia(index)}
           >
             <X className="h-4 w-4" />

@@ -83,22 +83,8 @@ export default function Home() {
     setTweets(newTweets);
   };
 
-  const handleMediaUpload = (tweetIndex: number, newMedia: Array<NewMedia>) => {
-    setMedia((prevMedia) => {
-      // Remove existing media for this tweet
-
-      // Add new media
-      const updatedMedia = [...prevMedia, ...newMedia];
-
-      // Clean up any previous object URLs
-      // newMedia.forEach((item) => {
-      //   if (item.file) {
-      //     URL.revokeObjectURL(item.url);
-      //   }
-      // });
-
-      return updatedMedia;
-    });
+  const handleMediaUpload = (newMedia: Array<NewMedia>) => {
+    setMedia((prevMedia) => [...prevMedia, ...newMedia]);
   };
 
   const removeMedia = (index: number) => {
@@ -177,14 +163,20 @@ export default function Home() {
 
   return (
     <main className="container mx-auto py-8 px-4 max-w-3xl">
-      <h1 className="text-3xl font-bold mb-6 text-center">AI Tweet Generator</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        AI Tweet Generator
+      </h1>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5 gap-2 mb-6">
           <TabsTrigger value="generate">Generate</TabsTrigger>
           <TabsTrigger value="image">Generate Image</TabsTrigger>
-          <TabsTrigger value="edit" disabled={tweets.length === 0}>Edit</TabsTrigger>
-          <TabsTrigger value="preview" disabled={tweets.length === 0}>Preview</TabsTrigger>
+          <TabsTrigger value="edit" disabled={tweets.length === 0}>
+            Edit
+          </TabsTrigger>
+          <TabsTrigger value="preview" disabled={tweets.length === 0}>
+            Preview
+          </TabsTrigger>
           <TabsTrigger value="direct-post">Direct Post</TabsTrigger>
         </TabsList>
 
@@ -224,7 +216,9 @@ export default function Home() {
           <Card>
             <CardHeader>
               <CardTitle>Generate Image</CardTitle>
-              <CardDescription>Describe the image you want to generate</CardDescription>
+              <CardDescription>
+                Describe the image you want to generate
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -251,7 +245,9 @@ export default function Home() {
 
                 {generatedImages.length > 0 && (
                   <div className="mt-4">
-                    <h3 className="text-sm font-medium mb-2">Generated Images</h3>
+                    <h3 className="text-sm font-medium mb-2">
+                      Generated Images
+                    </h3>
                     <div className="grid grid-cols-2 gap-4">
                       {generatedImages.map((imageUrl, index) => (
                         <div key={index} className="rounded-lg overflow-hidden">
